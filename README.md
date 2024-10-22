@@ -1,149 +1,182 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Main.java to edit this template
+ */
+package GUI;
+import java.io.Console;
+import java.io.IOException;
 import java.util.Locale;
 import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.Scanner;
-import java.util.regex.Pattern;
 
 public class TPBank {
 
     private static final Scanner sc = new Scanner(System.in);
-    
-    public static void getWordLanguage(Locale locate, String key){
-        ResourceBundle words = ResourceBundle.getBundle("Language.messages", locate);
+
+    public static void getWordLanguage(Locale locale, String key) {
+        ResourceBundle words = ResourceBundle.getBundle("Language.messages", locale);
         String value = words.getString(key);
         System.out.print(value);
     }
 
-    public static int checkInputIntLimit(int min, int max, Locale language){
+    public static int checkInputIntLimit(int min, int max, Locale language) {
         while (true) {
             try {
-                int result = Integer.parseInt(sc.nextLine().trim());
-                if (result < min || result > max) {
-                    throw new NumberFormatException();
-                }
+                String input = sc.nextLine().trim();
+                if (!input.matches("\\d+")) throw new NumberFormatException();
+                int result = Integer.parseInt(input);
+                if (result < min || result > max) throw new NumberFormatException();
                 return result;
             } catch (NumberFormatException e) {
                 getWordLanguage(language, "errCheckInputIntLimit");
-                System.out.println("");
+                System.out.println();
             }
         }
     }
-    
-    public static String checkInputString(Locale language){
-        while (true){
+
+    public static String checkInputString(Locale language) {
+        while (true) {
             String result = sc.nextLine().trim();
-            if (result.isEmpty()){
+            if (result.isEmpty()) {
                 getWordLanguage(language, "errCheckInputString");
-                System.out.println("");
+                System.out.println();
             } else {
                 return result;
             }
         }
-    } 
-    
-    public static int checkInputAccount(Locale language){
-        String result;
-        while (true){
-            result = checkInputString(language);
-            if (!result.matches("^\\d{10}$")){
+    }
+
+    public static long checkInputAccount(Locale language) {
+        while (true) {
+            String result = checkInputString(language);
+            if (!result.matches("^\\d{10}$")) {
                 getWordLanguage(language, "errCheckInputAccount");
-                System.out.println("");
+                System.out.println();
             } else {
-                return Integer.parseInt(result);
+                return Long.parseLong(result);
             }
         }
     }
-    
-    public static boolean isValidPass(String pass, Locale language){
+
+    public static boolean isValidPass(String pass, Locale language) {
         int lengthP = pass.length();
-        if (lengthP < 8 || lengthP > 31){
+        if (lengthP < 8 || lengthP > 31) {
             getWordLanguage(language, "errCheckLengthPassword");
-            System.out.println("");
+            System.out.println();
             return false;
         }
         int countDigit = 0;
         int countLetter = 0;
-        for (int i=0; i<lengthP-1; i++){
-            if (Character.isDigit(pass.charAt(i))) countDigit++;
-            else if (Character.isLetter(pass.charAt(i))) countLetter++;
+        for (char ch : pass.toCharArray()) {
+            if (Character.isDigit(ch)) countDigit++;
+            else if (Character.isLetter(ch)) countLetter++;
         }
-        if (countDigit < 1 || countLetter < 1){
+        if (countDigit < 1 || countLetter < 1) {
             getWordLanguage(language, "errCheckAlphanumericPassword");
-            System.out.println("");
+            System.out.println();
             return false;
         }
         return true;
     }
-    
-    public static String checkInputPass(Locale language){
-        String result;
-        while (true){
-            result = checkInputString(language);
-            if (isValidPass(result, language)) return result;
+
+    public static String checkInputPass(Locale language) {
+        while (true) {
+            String password = readPasswordWithAsterisks(language);
+            if (isValidPass(password, language)) return password;
         }
     }
-    
-    // Removed chars array and used regex pattern directly
-    private static final Pattern CHAR_PATTERN = Pattern.compile("[0-9A-Za-z]");
 
-    public static String captchaText(){
+    public static String readPasswordWithAsterisks(Locale language) {
+        Console console = System.console();
+        if (console != null) {
+            // Đọc mật khẩu và hiển thị ký tự *
+            char[] passwordArray = console.readPassword("Enter Password: ");
+            return new String(passwordArray);
+        } else {
+            // Nếu không chạy được trong Console, dùng cách đọc từ System.in
+            StringBuilder password = new StringBuilder();
+            try {
+                while (true) {
+                    char ch = (char) System.in.read(); // Đọc từng ký tự
+                    if (ch == '\n') break;  // Dừng khi nhấn Enter
+                    if (ch == '\b' && password.length() > 0) {  // Xóa ký tự khi nhấn Backspace
+                        password.deleteCharAt(password.length() - 1);
+                        System.out.print("\b \b");  // Xóa ký tự trên console
+                    } else {
+                        password.append(ch);
+                        System.out.print("*");  // Hiển thị *
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            System.out.println();  // Xuống dòng sau khi nhập xong
+            return password.toString();
+        }
+    }
+
+    private static final char[] chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray();
+
+    public static String captchaText() {
         Random random = new Random();
         StringBuilder captcha = new StringBuilder();
-        for (int i=0; i<5; i++){
-            char randomChar;
-            do {
-                randomChar = (char) (random.nextInt(62) + '0');
-            } while (!CHAR_PATTERN.matcher(String.valueOf(randomChar)).matches());
-            captcha.append(randomChar);
+        for (int i = 0; i < 5; i++) {
+            int capIndex = random.nextInt(chars.length);
+            captcha.append(chars[capIndex]);
         }
         return captcha.toString();
     }
 
-    public static boolean checkInputCaptcha(String captcha, Locale language){
+    public static boolean checkInputCaptcha(String captcha, Locale language) {
         System.out.println("Captcha: " + captcha);
         getWordLanguage(language, "enterCaptcha");
         String captchaIn = checkInputString(language);
-        for (int i=0; i<captchaIn.length(); i++){
-            if (!captcha.contains(Character.toString(captchaIn.charAt(i)))) return false;
-        }
-        return true;
+        return captcha.equals(captchaIn);
     }
 
-    public static void login(Locale language){
-        getWordLanguage(language, "enterAccountNumber");
-        int accountNumber = checkInputAccount(language);
-        getWordLanguage(language, "enterPassword");
-        String passString = checkInputPass(language);
-        String captcha = captchaText();
-        while (true){
-            if (checkInputCaptcha(captcha, language)){
-                getWordLanguage(language, "loginSuccess");
-                System.out.println("");
-                return;
-            }else{
-                getWordLanguage(language, "errCaptchaIncorrect");
-                System.out.println("");
-            }
+    public static void login(Locale language) {
+    getWordLanguage(language, "enterAccountNumber");
+    long accountNumber = checkInputAccount(language);
+    getWordLanguage(language, "enterPassword");
+    String passString = checkInputPass(language);
+
+    while (true) {
+        String captcha = captchaText();  // Sinh captcha mới mỗi lần lặp
+        if (checkInputCaptcha(captcha, language)) {
+            getWordLanguage(language, "loginSuccess");
+            System.out.println("");
+            return;
+        } else {
+            getWordLanguage(language, "errCaptchaIncorrect");
+            System.out.println("");
         }
     }
+}
+
 
     public static void main(String[] args) {
         Locale vietnamese = new Locale("vi");
         Locale english = Locale.ENGLISH;
+
         System.out.println("1. Vietnamese");
         System.out.println("2. English");
         System.out.println("3. Exit");
-        System.out.print("Please choice one option: ");
+        System.out.print("Please choose one option: ");
         int choice = checkInputIntLimit(1, 3, english);
-        switch (choice){
+
+        switch (choice) {
             case 1:
                 login(vietnamese);
                 break;
-            case 2:  
+            case 2:
                 login(english);
                 break;
             case 3:
                 System.out.println("Goodbye!");
+                break;
+            default:
+                System.out.println("Invalid choice!");
                 break;
         }
     }
